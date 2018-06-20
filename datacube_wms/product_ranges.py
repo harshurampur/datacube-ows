@@ -50,6 +50,7 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
     crses = {crsid: datacube.utils.geometry.CRS(crsid) for crsid in crsids}
     ds_count = 0
     for ds in dc.find_datasets(product=product_name):
+        print ("Dataset:", ds)
         if extractor is not None:
             path = extractor(ds)
             if path not in sub_r:
@@ -85,19 +86,18 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
             sub_r[path]["time_set"].add(dt.date())
 
         for crsid in crsids:
+            print ("CRS:", crsid)
             crs = crses[crsid]
             ext = ds.extent
             if ext.crs != crs:
-                print ("Converting Extent from", ext.crs, "to", crs)
                 ext = ext.to_crs(crs)
-            print ("ext is of type", ext.__class__.__name__)
             if extents[crsid] is None:
-                print ("First Extent")
+                print ("First Extent:", ext)
                 extents[crsid] = ext
             else:
-                print ("Unioning with previous extent")
+                print ("Unioning:", ext)
                 extents[crsid] = extents[crsid].union(ext)
-                print ("Unioned extent is of type", extents[crsid].__class__.__name__)
+                print ("Unioned extent:", ext)
             if path is not None:
                 if sub_r[path]["extents"][crsid] is None:
                     sub_r[path]["extents"][crsid] = ext
@@ -115,8 +115,10 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
     crsid = None
     ext = None
     try:
+        print ("Building Bounding Boxes")
         for crsid in crsids:
             ext = extents[crsid]
+            print ("CRS:", crsid)
             bboxes[crsid] = ext.boundingbox
         r["boxes"] = bboxes
     except Exception as e:

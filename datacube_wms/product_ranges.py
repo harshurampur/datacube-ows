@@ -88,11 +88,16 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
             crs = crses[crsid]
             ext = ds.extent
             if ext.crs != crs:
+                print ("Converting Extent from", ext.crs, "to", crs)
                 ext = ext.to_crs(crs)
+            print ("ext is of type", ext.__class__.__name__)
             if extents[crsid] is None:
+                print ("First Extent")
                 extents[crsid] = ext
             else:
+                print ("Unioning with previous extent")
                 extents[crsid] = extents[crsid].union(ext)
+                print ("Unioned extent is of type", extents[crsid].__class__.__name__)
             if path is not None:
                 if sub_r[path]["extents"][crsid] is None:
                     sub_r[path]["extents"][crsid] = ext

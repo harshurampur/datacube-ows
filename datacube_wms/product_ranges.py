@@ -91,18 +91,21 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
             ext = ds.extent
             if ext.crs != crs:
                 ext = ext.to_crs(crs)
+            cvx_ext = ext.convex_hull
+            if cvx_ext != ext:
+                print ("WARNING: Dataset", ds.id, "CRS", crsid, "extent is not convex.")
             if extents[crsid] is None:
-                print ("First Extent:", ext)
-                extents[crsid] = ext
+                print ("First Extent:", cvx_ext)
+                extents[crsid] = cvx_ext
             else:
-                print ("Unioning:", ext)
-                extents[crsid] = extents[crsid].union(ext)
-                print ("Unioned extent:", ext)
+                print ("Unioning:", cvx_ext)
+                extents[crsid] = extents[crsid].union(cvx_ext)
+                print ("Unioned extent:", cvx_ext)
             if path is not None:
                 if sub_r[path]["extents"][crsid] is None:
-                    sub_r[path]["extents"][crsid] = ext
+                    sub_r[path]["extents"][crsid] = cvx_ext
                 else:
-                    sub_r[path]["extents"][crsid] = sub_r[path]["extents"][crsid].union(ext)
+                    sub_r[path]["extents"][crsid] = sub_r[path]["extents"][crsid].union(cvx_ext)
 
         ds_count += 1
 
@@ -407,6 +410,8 @@ def get_ranges(dc, product, path=None):
                 "max": float(result["lon_max"]),
             },
             "times": times,
+            "start_time": times[0],
+            "end_time": times[-1],
             "time_set": set(times),
             "bboxes": result["bboxes"]
         }

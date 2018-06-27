@@ -3,60 +3,29 @@ from pytz import utc
 
 from affine import Affine
 from datacube.utils import geometry
-from flask import render_template
 import math
 
 try:
-    from datacube_wms.wms_cfg_local import response_cfg, service_cfg
+    from datacube_wms.wms_cfg_local import response_cfg
 except:
-    from datacube_wms.wms_cfg import response_cfg, service_cfg
-from datacube_wms.wms_layers import get_layers
+    from datacube_wms.wms_cfg import response_cfg
+from datacube_wms.wms_layers import get_layers, get_service_cfg
 
-def resp_headers(d):
-    hdrs = {}
-    hdrs.update(response_cfg)
-    hdrs.update(d)
-    return hdrs
+from datacube_wms.ogc_exceptions import WMSException
 
 
-class WMSException(Exception):
-    INVALID_FORMAT = "InvalidFormat"
-    INVALID_CRS = "InvalidCRS"
-    LAYER_NOT_DEFINED = "LayerNotDefined"
-    STYLE_NOT_DEFINED = "StyleNotDefined"
-    LAYER_NOT_QUERYABLE = "LayerNotQueryable"
-    INVALID_POINT = "InvalidPoint"
-    CURRENT_UPDATE_SEQUENCE = "CurrentUpdateSequence"
-    INVALID_UPDATE_SEQUENCE = "InvalidUpdateSequence"
-    MISSING_DIMENSION_VALUE = "MissingDimensionValue"
-    INVALID_DIMENSION_VALUE = "InvalidDimensionValue"
-    OPERATION_NOT_SUPPORTED = "OperationNotSupported"
-
-    def __init__(self, msg, code=None, locator=None, http_response=400):
-        self.http_response = http_response
-        self.errors = []
-        self.add_error(msg, code, locator)
-
-    def add_error(self, msg, code=None, locator=None):
-        self.errors.append({
-            "msg": msg,
-            "code": code,
-            "locator": locator
-        })
-
-
-def wms_exception(e, traceback=[]):
-    return render_template("wms_error.xml", exception=e, traceback=traceback), e.http_response, resp_headers(
-        {"Content-Type": "application/xml"})
+def _get_geobox_xy(args, crs):
+    if get_service_cfg().published_CRSs[crs.crs_str]["vertical_coord_first"]:
+        miny, minx, maxy, maxx = map(float, args['bbox'].split(','))
+    else:
+        minx, miny, maxx, maxy = map(float, args['bbox'].split(','))
+    return minx, miny, maxx, maxy
 
 
 def _get_geobox(args, crs):
     width = int(args['width'])
     height = int(args['height'])
-    if service_cfg["published_CRSs"][crs.crs_str].get("vertical_coord_first"):
-        miny, minx, maxy, maxx = map(float, args['bbox'].split(','))
-    else:
-        minx, miny, maxx, maxy = map(float, args['bbox'].split(','))
+    minx, miny, maxx, maxy = _get_geobox_xy(args, crs)
 
     # miny-maxy for negative scale factor and maxy in the translation, includes inversion of Y axis.
     affine = Affine.translation(minx, maxy) * Affine.scale((maxx - minx) / width, (miny - maxy) / height)
@@ -73,7 +42,7 @@ def zoom_factor(args, crs):
     # Extract request bbox and crs
     width = int(args['width'])
     height = int(args['height'])
-    minx, miny, maxx, maxy = map(float, args['bbox'].split(','))
+    minx, miny, maxx, maxy = _get_geobox_xy(args, crs)
     p1 = geometry.point(minx, maxy, crs)
     p2 = geometry.point(minx, miny, crs)
     p3 = geometry.point(maxx, maxy, crs)
@@ -102,8 +71,9 @@ def zoom_factor(args, crs):
 
 
 def img_coords_to_geopoint(geobox, i, j):
-    h_coord = service_cfg["published_CRSs"][geobox.crs.crs_str].get("horizontal_coord", "longitude")
-    v_coord = service_cfg["published_CRSs"][geobox.crs.crs_str].get("vertical_coord", "latitude")
+    service_cfg = get_service_cfg()
+    h_coord = service_cfg.published_CRSs[geobox.crs.crs_str]["horizontal_coord"]
+    v_coord = service_cfg.published_CRSs[geobox.crs.crs_str]["vertical_coord"]
     return geometry.point(geobox.coordinates[h_coord].values[int(i)],
                           geobox.coordinates[v_coord].values[int(j)],
                           geobox.crs)
@@ -201,7 +171,7 @@ class GetParameters(object):
             crs_arg = "crs"
         self.crsid = get_arg(args, crs_arg, "Coordinate Reference System",
                         errcode=WMSException.INVALID_CRS,
-                        permitted_values=service_cfg["published_CRSs"].keys())
+                        permitted_values=get_service_cfg().published_CRSs.keys())
         self.crs = geometry.CRS(self.crsid)
         # Layers
         self.product = self.get_product(args)

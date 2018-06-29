@@ -83,17 +83,21 @@ class ProductLayerDef(object):
         self.pq_manual_merge = product_cfg.get("pq_manual_merge", False)
 
         # For WCS
-        self.native_CRS = self.product.definition["storage"]["crs"]
-        svc_cfg = get_service_cfg()
-        if self.native_CRS not in svc_cfg.published_CRSs:
-            raise Exception("Native CRS for product {} ({}) not in published CRSs".format(self.product_name, self.native_CRS))
-        data = dc.load(self.product_name, dask_chunks={})
-        self.grid_high_x = len(data[svc_cfg.published_CRSs[self.native_CRS]["horizontal_coord"]])
-        self.grid_high_y = len(data[svc_cfg.published_CRSs[self.native_CRS]["vertical_coord"]])
-        self.origin_x = data.affine[3]
-        self.origin_y = data.affine[5]
-        self.resolution_x = data.affine[0]
-        self.resolution_y = data.affine[4]
+        try:
+            self.native_CRS = self.product.definition["storage"]["crs"]
+            svc_cfg = get_service_cfg()
+            if self.native_CRS not in svc_cfg.published_CRSs:
+                raise Exception("Native CRS for product {} ({}) not in published CRSs".format(self.product_name, self.native_CRS))
+            self.native_CRS_def = svc_cfg.published_CRSs[self.native_CRS]
+            data = dc.load(self.product_name, dask_chunks={})
+            self.grid_high_x = len(data[svc_cfg.published_CRSs[self.native_CRS]["horizontal_coord"]])
+            self.grid_high_y = len(data[svc_cfg.published_CRSs[self.native_CRS]["vertical_coord"]])
+            self.origin_x = data.affine[3]
+            self.origin_y = data.affine[5]
+            self.resolution_x = data.affine[0]
+            self.resolution_y = data.affine[4]
+        except:
+            self.native_CRS = None
         bands = dc.list_measurements().ix[self.product_name]
         self.bands = bands.index.values
         self.nodata_values = bands['nodata'].values
@@ -196,7 +200,7 @@ class ServiceCfg(object):
                     raise Exception("Configured default geographic CRS not listed in published CRSs.")
                 if not self.published_CRSs[self.default_geographic_CRS]["geographic"]:
                     raise Exception("Configured default geographic CRS not listed in published CRSs as geographic.")
-
+                self.default_geographic_CRS_def = self.published_CRSs[self.default_geographic_CRS]
                 self.wcs_formats = {}
                 for fmt_name, fmt in service_cfg["wcs_formats"].items():
                     self.wcs_formats[fmt_name] = {
@@ -217,6 +221,7 @@ class ServiceCfg(object):
                     raise Exception("Configured native WCS format not a supported format.")
             else:
                 self.default_geographic_CRS = None
+                self.default_geographic_CRS_def = {}
                 self.wcs_formats = {}
                 self.native_wcs_format = None
 

@@ -8,6 +8,7 @@ from affine import Affine
 
 from datacube.utils import geometry
 from rasterio import MemoryFile
+from rasterio.enums import ColorInterp
 
 from datacube_wms.cube_pool import get_cube, release_cube
 from datacube_wms.data import DataStacker
@@ -144,6 +145,8 @@ class WCS1GetCoverageRequest(object):
         if "measurements" not in args:
             if len(self.product.bands) <= 3:
                 self.bands = list(self.product.bands)
+            elif "red" in self.product.bands and "green" in self.product.bands and "blue" in self.product.bands:
+                self.bands = [ "red", "green", "blue" ]
             else:
                 self.bands = list(self.product.bands[0:3])
         else:
@@ -249,7 +252,7 @@ class WCS1GetCoverageRequest(object):
                                  (self.minx, self.miny)],
                                 self.request_crs)
 
-        self.affine = Affine.translation(self.minx, self.maxy) * Affine.scale((self.maxx-self.minx)/self.width, (self.maxy-self.miny)/self.height)
+        self.affine = Affine.translation(self.minx, self.miny) * Affine.scale((self.maxx-self.minx)/self.width, (self.maxy-self.miny)/self.height)
         self.geobox = geometry.GeoBox(self.width, self.height, self.affine, self.request_crs)
 
 
@@ -379,7 +382,7 @@ def get_netcdf(req, data):
         v.attrs["crs"] = req.response_crsid
         if "spectral_definition" in v.attrs:
             del v.attrs["spectral_definition"]
-    if "time" in data and "units" in data["time"]:
+    if "time" in data and "units" in data["time"].attrs:
         del data["time"].attrs["units"]
 
     # And export to NetCDF

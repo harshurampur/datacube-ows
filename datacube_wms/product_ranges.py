@@ -26,10 +26,11 @@ def accum_max(a, b):
         return max(a, b)
 
 
-def determine_product_ranges(dc, product_name, time_offset, extractor):
+def determine_product_ranges(dc, product_name, time_offset, extractor, debug=False):
     start = datetime.now()
     product = dc.index.products.get_by_name(product_name)
-    print("Product: ", product_name)
+    crsids = service_cfg["published_CRSs"]
+    if debug: print("Product: ", product_name)
     r = {
         "product_id": product.id,
 
@@ -41,12 +42,10 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
             "min": None,
             "max": None
         },
+        "time_set": set(),
+        "extents": { crsid: None for crsid in crsids },
     }
     sub_r = {}
-    time_set = set()
-
-    crsids = service_cfg["published_CRSs"]
-    extents = {crsid: None for crsid in crsids}
     crses = {crsid: datacube.utils.geometry.CRS(crsid) for crsid in crsids}
     ds_count = 0
     for ds in dc.find_datasets(product=product_name):
@@ -81,7 +80,7 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
         r["lon"]["max"] = accum_max(r["lon"]["max"], ds.metadata.lon.end)
 
         dt = ds.center_time + timedelta(hours=time_offset)
-        time_set.add(dt.date())
+        r["time_set"].add(dt.date())
         if path is not None:
             sub_r[path]["time_set"].add(dt.date())
 
@@ -94,13 +93,13 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
             cvx_ext = ext.convex_hull
             if cvx_ext != ext:
                 print ("WARNING: Dataset", ds.id, "CRS", crsid, "extent is not convex.")
-            if extents[crsid] is None:
-                print ("First Extent:", cvx_ext)
-                extents[crsid] = cvx_ext
+            if r["extents"][crsid] is None:
+                if debug: print ("First Extent:", cvx_ext)
+                r["extents"][crsid] = cvx_ext
             else:
-                print ("Unioning:", cvx_ext)
-                extents[crsid] = extents[crsid].union(cvx_ext)
-                print ("Unioned extent:", cvx_ext)
+                if debug: print ("Unioning:", cvx_ext)
+                r["extents"][crsid] = r["extents"][crsid].union(cvx_ext)
+                if debug: print ("Unioned extent:", r["extents"][crsid])
             if path is not None:
                 if sub_r[path]["extents"][crsid] is None:
                     sub_r[path]["extents"][crsid] = cvx_ext
@@ -109,27 +108,24 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
 
         ds_count += 1
 
-    r["times"] = sorted(time_set)
-    r["time_set"] = time_set
+    r["times"] = sorted(r["time_set"])
 
-    ##########
-    # r["bboxes"] = {crsid: extents[crsid].boundingbox for crsid in crsids}
-    bboxes = {}
-    crsid = None
-    ext = None
-    try:
-        print ("Building Bounding Boxes")
-        for crsid in crsids:
-            ext = extents[crsid]
-            print ("CRS:", crsid)
-            bboxes[crsid] = ext.boundingbox
-        r["boxes"] = bboxes
-    except Exception as e:
-        print("Extent issue: crs:", crsid)
-        print("Extent:", ext)
-        raise e
-    r["boxes"] = bboxes
-    ##########
+    if debug:
+        r["bboxes"] = {}
+        crsid = None
+        ext = None
+        try:
+            print ("Building Bounding Boxes")
+            for crsid in crsids:
+                if debug: print ("CRS:", crsid)
+                ext = r["extents"][crsid]
+                r["bboxes"][crsid] = ext.boundingbox
+        except Exception as e:
+            print("Extent issue: crs:", crsid)
+            print("Extent:", ext)
+            raise e
+    else:
+        r["bboxes"] = {crsid: r["extents"][crsid].boundingbox for crsid in crsids}
 
     if extractor is not None:
         for path in sub_r.keys():
@@ -142,11 +138,11 @@ def determine_product_ranges(dc, product_name, time_offset, extractor):
     return r
 
 
-def determine_ranges(dc):
+def determine_ranges(dc, debug=False):
     ranges = []
     for layer in layer_cfg:
         for product_cfg in layer["products"]:
-            ranges.append(determine_product_ranges(dc, product_cfg["product_name"], product_cfg.get("time_zone", 9), product_cfg.get("sub_product_extractor")))
+            ranges.append(determine_product_ranges(dc, product_cfg["product_name"], product_cfg.get("time_zone", 9), product_cfg.get("sub_product_extractor"), debug=debug))
     return ranges
 
 
@@ -293,7 +289,7 @@ def ranges_equal(r1, rdb):
         return False
     return True
 
-def update_range(dc, product):
+def update_range(dc, product, debug=False):
     def find(list, key, value):
         for d in list:
             if d[key] == value:
@@ -306,7 +302,8 @@ def update_range(dc, product):
         product_range = determine_product_ranges(dc,
                                                  product,
                                                  layer.get("time_zone", 9),
-                                                 layer.get("sub_product_extractor"))
+                                                 layer.get("sub_product_extractor"),
+                                                 debug=debug)
         conn = get_sqlconn(dc)
         txn = conn.begin()
         ids_in_db = get_ids_in_db(conn)
@@ -325,7 +322,6 @@ def update_range(dc, product):
 
         if "sub_products" in product_range:
             for path, subr in product_range["sub_products"].items():
-                db_range = get_ranges(dc, subr["product_id"], path)
                 if (subr["product_id"], path) in subids_in_db:
                     db_range = get_ranges(dc, subr["product_id"], path)
                     if ranges_equal(subr, db_range):
@@ -340,8 +336,8 @@ def update_range(dc, product):
         print("Could not find product")
 
 
-def update_all_ranges(dc):
-    ranges = determine_ranges(dc)
+def update_all_ranges(dc, debug=False):
+    ranges = determine_ranges(dc, debug=debug)
     conn = get_sqlconn(dc)
     txn = conn.begin()
     ids_in_db = get_ids_in_db(conn)
@@ -365,7 +361,6 @@ def update_all_ranges(dc):
             i += 1
         if "sub_products" in prod_ranges:
             for path, subr in prod_ranges["sub_products"].items():
-                db_ranges = get_ranges(dc, subr["product_id"], path)
                 if (subr["product_id"], path) in subids_in_db:
                     db_ranges = get_ranges(dc, subr["product_id"], path)
                     if ranges_equal(subr, db_ranges):

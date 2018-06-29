@@ -4,7 +4,7 @@ from datacube_wms.cube_pool import get_cube, release_cube
 if __name__ == "__main__":
     app = "wms_update"
     dc = get_cube(app=app)
-    passed, updated, inserted, sub_passed, sub_updated, sub_inserted = update_all_ranges(dc)
+    passed, updated, inserted, sub_passed, sub_updated, sub_inserted = update_all_ranges(dc, debug=True)
     release_cube(dc, app=app)
     print("%d existing products unchanged" % passed)
     print("%d existing products updated" % updated)

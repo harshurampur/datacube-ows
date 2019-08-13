@@ -14,11 +14,9 @@ RUN apt-get update && apt-get install -y \
     unzip \
     postgresql-client \
     jq \
-    yq \
     awscli \
     curl \
     libev-dev \
-    split \
     && rm -rf /var/lib/apt/lists/*
 
 # Perform setup install

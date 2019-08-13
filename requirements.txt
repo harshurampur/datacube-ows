@@ -20,4 +20,4 @@ ruamel.yaml
 scikit-image
 timezonefinder
 watchdog
-yaml
+pyyaml

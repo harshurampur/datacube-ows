@@ -2,8 +2,8 @@ FROM opendatacube/datacube-core:1.7
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN groupadd -r owsgroup && \
-    useradd -r -g owsgroup owsuser
+RUN groupadd -r devgroup && \
+    useradd -r -g devgroup k8sdev
 
 RUN apt-get update && apt-get install -y \
     python3-matplotlib \
@@ -82,16 +82,18 @@ ADD https://raw.githubusercontent.com/opendatacube/datacube-dataset-config/maste
 
 WORKDIR /code
 
-# Create owsuser directory using root access
-RUN mkdir -p /home/owsuser
+# Create k8sdev directory using root access
+RUN mkdir -p /home/k8sdev
 
-# Create a new .datacube.conf file in owsuser home directory as a root user
-RUN echo "[datacube]" > /home/owsuser/.datacube.conf
+# Create a new .datacube.conf file in k8sdev home directory as a root user
+RUN echo "[datacube]" > /home/k8sdev/.datacube.conf
 
-# Change the ownership from root to owsuser
-RUN chown -R owsuser /code/*
-RUN chown -R owsuser /usr/local/*
-RUN chown owsuser /home/owsuser/.datacube.conf
+# Change the ownership from root to k8sdev
+RUN chown -R k8sdev /code/*
+RUN chown -R k8sdev /usr/local/*
+RUN chown -R k8sdev /opt/odc/*
+RUN chown k8sdev /home/k8sdev/.datacube.conf
+RUN chown k8sdev /opt/odc/datacube.conf
 
-# Run container as an owsuser instead as root user
-USER owsuser
+# Run container as an k8sdev instead as root user
+USER k8sdev

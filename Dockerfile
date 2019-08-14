@@ -93,7 +93,6 @@ RUN chown -R k8sdev /code/*
 RUN chown -R k8sdev /usr/local/*
 RUN chown -R k8sdev /opt/odc/*
 RUN chown k8sdev /home/k8sdev/.datacube.conf
-RUN chown k8sdev /opt/odc/datacube.conf
 
 # Run container as an k8sdev instead as root user
 USER k8sdev

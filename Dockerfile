@@ -27,8 +27,7 @@ ADD . .
 RUN pip3 install --upgrade pip \
     && rm -rf $HOME/.cache/pip
 
-COPY https://raw.githubusercontent.com/opendatacube/datacube-ows/master/requirements.txt \
-     requirements.txt
+wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/requirements.txt
 
 RUN pip3 install -r requirements.txt \
     && rm -rf $HOME/.cache/pip
@@ -48,36 +47,29 @@ RUN pip3 install --extra-index-url="https://packages.dea.gadevs.ga" \
 RUN pip3 install . \
     && rm -rf $HOME/.cache/pip
 
-COPY https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/create-db.sh \
-     create-db.sh
-COPY https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/drop-db.sh \
-     drop-db.sh
+wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/create-db.sh
+wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/drop-db.sh
 
 # Install dea proto for indexing tools
 RUN mkdir -p /code/index/indexing
 WORKDIR /code/index/indexing
 
-COPY https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/update_ranges.sh \
-     update_ranges.sh
-COPY https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/update_ranges_wrapper.sh \
-     update_ranges_wrapper.sh
+wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/update_ranges.sh
+wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/update_ranges_wrapper.sh
 ADD https://raw.githubusercontent.com/opendatacube/datacube-dataset-config/master/scripts/index_from_s3_bucket.py \
     ls_s2_cog.py
 
 WORKDIR /code/index
-COPY https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/create-index.sh \
-     create-index.sh
+wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/create-index.sh
 
 # Archive install
 RUN mkdir -p /code/archive/archiving
 WORKDIR /code/archive
 
-COPY https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/archive-wrapper.sh \
-     archive-wrapper.sh
+wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/archive-wrapper.sh
 
 WORKDIR /code/archive/archiving
-COPY https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/archive.sh \
-     archive.sh
+wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/archive.sh
 ADD https://raw.githubusercontent.com/opendatacube/datacube-dataset-config/master/scripts/index_from_s3_bucket.py \
     ls_s2_cog.py
 

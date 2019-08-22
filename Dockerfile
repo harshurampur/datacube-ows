@@ -27,7 +27,7 @@ ADD . .
 RUN pip3 install --upgrade pip \
     && rm -rf $HOME/.cache/pip
 
-RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/requirements.txt
+RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/requirements.txt requirements.txt
 
 RUN pip3 install -r requirements.txt \
     && rm -rf $HOME/.cache/pip
@@ -47,8 +47,8 @@ RUN pip3 install --extra-index-url="https://packages.dea.gadevs.ga" \
 RUN pip3 install . \
     && rm -rf $HOME/.cache/pip
 
-RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/create-db.sh
-RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/drop-db.sh
+RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/setup-k/assets/create-db.sh
+RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/setup-k/assets/drop-db.sh
 
 # Install dea proto for indexing tools
 RUN mkdir -p /code/index/indexing
@@ -66,10 +66,10 @@ RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/dock
 RUN mkdir -p /code/archive/archiving
 WORKDIR /code/archive
 
-RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/archive-wrapper.sh
+RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/archive/assets/archive-wrapper.sh
 
 WORKDIR /code/archive/archiving
-RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/index-k/assets/archive.sh
+RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/docker/auxiliary/archive/assets/archive.sh
 ADD https://raw.githubusercontent.com/opendatacube/datacube-dataset-config/master/scripts/index_from_s3_bucket.py \
     ls_s2_cog.py
 

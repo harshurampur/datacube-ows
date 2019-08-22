@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     awscli \
     curl \
     libev-dev \
+    git \
+    default-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 # Perform setup install
@@ -30,6 +32,9 @@ RUN pip3 install --upgrade pip \
 RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/requirements.txt
 
 RUN pip3 install -r requirements.txt \
+    && rm -rf $HOME/.cache/pip
+
+RUN pip3 install bzt \
     && rm -rf $HOME/.cache/pip
 
 # ODC cloud tools depend on aiobotocore which has a dependency on a specific version of botocore,
@@ -73,4 +78,11 @@ RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/dock
 ADD https://raw.githubusercontent.com/opendatacube/datacube-dataset-config/master/scripts/index_from_s3_bucket.py \
     ls_s2_cog.py
 
+# Install JMeter for performance testing
+# https://www.blazemeter.com/blog/performance-testing-with-docker/
+RUN bzt -install-tools -o modules.install-checker.include=jmeter
+
 WORKDIR /code
+
+ENTRYPOINT ["bzt"]
+

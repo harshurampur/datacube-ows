@@ -82,7 +82,4 @@ ADD https://raw.githubusercontent.com/opendatacube/datacube-dataset-config/maste
 # https://www.blazemeter.com/blog/performance-testing-with-docker/
 RUN bzt -install-tools -o modules.install-checker.include=jmeter
 
-WORKDIR /tmp
-
-ENTRYPOINT ["bzt"]
-
+WORKDIR /code

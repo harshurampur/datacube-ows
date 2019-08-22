@@ -27,7 +27,7 @@ ADD . .
 RUN pip3 install --upgrade pip \
     && rm -rf $HOME/.cache/pip
 
-RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/requirements.txt requirements.txt
+RUN wget https://raw.githubusercontent.com/opendatacube/datacube-ows/master/requirements.txt
 
 RUN pip3 install -r requirements.txt \
     && rm -rf $HOME/.cache/pip

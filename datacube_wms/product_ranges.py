@@ -103,6 +103,12 @@ def determine_product_ranges(dc, dc_product, extractor):
     calculate_extent = not svc.use_default_extent
     extents = {crsid: None for crsid in crsids}
     crses = get_crses(svc)
+    geo_crsid = None
+    for crsid in crsids:
+        if svc.published_CRSs[crsid]["geographic"]:
+            geo_crsid = crsid
+            break
+    assert geo_crsid
     ds_count = 0
     for ds in dc.find_datasets(product=dc_product.name):
         print("Processing a dataset", ds.id)
@@ -178,12 +184,7 @@ def determine_product_ranges(dc, dc_product, extractor):
     r["time_set"] = time_set
     r["bboxes"] = { crsid: jsonise_bbox(extents[crsid].boundingbox) for crsid in crsids }
 
-    geo_crsid = None
-    for crsid in crsids:
-        if crses[crsid]["geographic"]:
-            geo_crsid = crsid
-            break
-    assert geo_crsid
+
     geo_bbox = r["bboxes"][geo_crsid]
     r["lat"]["min"] = geo_bbox["bottom"]
     r["lat"]["max"] = geo_bbox["top"]

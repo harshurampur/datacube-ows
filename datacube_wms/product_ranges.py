@@ -186,6 +186,8 @@ def determine_product_ranges(dc, dc_product, extractor):
 
 
     geo_bbox = r["bboxes"][geo_crsid]
+    r["lat"] = {}
+    r["lon"] = {}
     r["lat"]["min"] = geo_bbox["bottom"]
     r["lat"]["max"] = geo_bbox["top"]
     r["lon"]["min"] = geo_bbox["left"]
@@ -198,6 +200,8 @@ def determine_product_ranges(dc, dc_product, extractor):
             sub_r[path]["bboxes"] = {crsid: jsonise_bbox(sub_r[path]["extents"][crsid].boundingbox) for crsid in crsids}
             del sub_r[path]["extents"]
         geo_bbox = sub_r["bboxes"][geo_crsid]
+        sub_r["lat"] = {}
+        sub_r["lon"] = {}
         sub_r["lat"]["min"] = geo_bbox["bottom"]
         sub_r["lat"]["max"] = geo_bbox["top"]
         sub_r["lon"]["min"] = geo_bbox["left"]

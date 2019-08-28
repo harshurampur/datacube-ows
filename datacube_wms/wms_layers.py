@@ -397,6 +397,7 @@ class ServiceCfg(object):
                 raise Exception("URL in service_cfg does not start with http or https.")
             self.human_url = srv_cfg.get("human_url", self.url)
             self.published_CRSs = {}
+            geo_crs = False
             for crs_str, crsdef in srv_cfg["published_CRSs"].items():
                 if crs_str.startswith("EPSG:"):
                     gml_name = "http://www.opengis.net/def/crs/EPSG/0/" + crs_str[5:]
@@ -410,6 +411,7 @@ class ServiceCfg(object):
                     "gml_name": gml_name
                 }
                 if self.published_CRSs[crs_str]["geographic"]:
+                    geo_crs = True
                     if self.published_CRSs[crs_str]["horizontal_coord"] != "longitude":
                         raise Exception("Published CRS {} is geographic"
                                         "but has a horizontal coordinate that is not 'longitude'".format(crs_str))
@@ -417,6 +419,8 @@ class ServiceCfg(object):
                         raise Exception("Published CRS {} is geographic"
                                         "but has a vertical coordinate that is not 'latitude'".format(crs_str))
 
+            if not geo_crs:
+                raise Exception("At least one published CRS must be geographic.  (Suggest EPSG:4326)")
             if self.wcs:
                 self.default_geographic_CRS = srv_cfg["default_geographic_CRS"]
                 if self.default_geographic_CRS not in self.published_CRSs:

@@ -85,16 +85,16 @@ def determine_product_ranges(dc, dc_product, extractor):
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements, protected-access
     start = datetime.now()
     print("Product: ", dc_product.name)
-    r = {
-        "lat": {
-            "min": None,
-            "max": None
-        },
-        "lon": {
-            "min": None,
-            "max": None
-        },
-    }
+    r = {}
+   #     "lat": {
+   #         "min": None,
+   #         "max": None
+   #     },
+   #     "lon": {
+   #         "min": None,
+   ##         "max": None
+   #     },
+   # }
     sub_r = {}
     time_set = set()
     svc = get_service_cfg()
@@ -113,28 +113,28 @@ def determine_product_ranges(dc, dc_product, extractor):
                 path = extractor(ds)
                 if path not in sub_r:
                     sub_r[path] = {
-                        "lat": {
-                            "min": None,
-                            "max": None,
-                        },
-                        "lon": {
-                            "min": None,
-                            "max": None,
-                        },
+                   #     "lat": {
+                   #         "min": None,
+                   #         "max": None,
+                   #     },
+                   #     "lon": {
+                   #         "min": None,
+                   #         "max": None,
+                   #     },
                         "time_set": set(),
                         "extents": {crsid: None for crsid in crsids}
                     }
-                sub_r[path]["lat"]["min"] = accum_min(sub_r[path]["lat"]["min"], ds.metadata.lat.begin)
-                sub_r[path]["lat"]["max"] = accum_max(sub_r[path]["lat"]["max"], ds.metadata.lat.end)
-                sub_r[path]["lon"]["min"] = accum_min(sub_r[path]["lon"]["min"], ds.metadata.lon.begin)
-                sub_r[path]["lon"]["max"] = accum_max(sub_r[path]["lon"]["max"], ds.metadata.lon.end)
+                #sub_r[path]["lat"]["min"] = accum_min(sub_r[path]["lat"]["min"], ds.metadata.lat.begin)
+                #sub_r[path]["lat"]["max"] = accum_max(sub_r[path]["lat"]["max"], ds.metadata.lat.end)
+                #sub_r[path]["lon"]["min"] = accum_min(sub_r[path]["lon"]["min"], ds.metadata.lon.begin)
+                #sub_r[path]["lon"]["max"] = accum_max(sub_r[path]["lon"]["max"], ds.metadata.lon.end)
             else:
                 path = None
 
-            r["lat"]["min"] = accum_min(r["lat"]["min"], ds.metadata.lat.begin)
-            r["lat"]["max"] = accum_max(r["lat"]["max"], ds.metadata.lat.end)
-            r["lon"]["min"] = accum_min(r["lon"]["min"], ds.metadata.lon.begin)
-            r["lon"]["max"] = accum_max(r["lon"]["max"], ds.metadata.lon.end)
+            #r["lat"]["min"] = accum_min(r["lat"]["min"], ds.metadata.lat.begin)
+            #r["lat"]["max"] = accum_max(r["lat"]["max"], ds.metadata.lat.end)
+            #r["lon"]["min"] = accum_min(r["lon"]["min"], ds.metadata.lon.begin)
+            #r["lon"]["max"] = accum_max(r["lon"]["max"], ds.metadata.lon.end)
 
             if path is not None:
                 sub_r[path]["time_set"].add(loc_date)
@@ -177,12 +177,31 @@ def determine_product_ranges(dc, dc_product, extractor):
     r["times"] = sorted(time_set)
     r["time_set"] = time_set
     r["bboxes"] = { crsid: jsonise_bbox(extents[crsid].boundingbox) for crsid in crsids }
-    print("LATS: ", r["lat"], " LONS: ", r["lon"])
+
+    geo_crsid = None
+    for crsid in crsids:
+        if crses[crsid]["geographic"]:
+            geo_crsid = crsid
+            break
+    assert geo_crsid
+    geo_bbox = r["bboxes"][geo_crsid]
+    r["lat"]["min"] = geo_bbox["bottom"]
+    r["lat"]["max"] = geo_bbox["top"]
+    r["lon"]["min"] = geo_bbox["left"]
+    r["lon"]["max"] = geo_bbox["right"]
+
+    # print("LATS: ", r["lat"], " LONS: ", r["lon"])
     if extractor is not None:
         for path in sub_r.keys():
             sub_r[path]["times"] = sorted(sub_r[path]["time_set"])
             sub_r[path]["bboxes"] = {crsid: jsonise_bbox(sub_r[path]["extents"][crsid].boundingbox) for crsid in crsids}
             del sub_r[path]["extents"]
+        geo_bbox = sub_r["bboxes"][geo_crsid]
+        sub_r["lat"]["min"] = geo_bbox["bottom"]
+        sub_r["lat"]["max"] = geo_bbox["top"]
+        sub_r["lon"]["min"] = geo_bbox["left"]
+        sub_r["lon"]["max"] = geo_bbox["right"]
+
         r["sub_products"] = sub_r
     end = datetime.now()
     print("Scanned %d datasets in %d seconds" % (ds_count, (end - start).seconds))

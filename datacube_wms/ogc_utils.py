@@ -42,7 +42,7 @@ def local_date(ds):
     return coord_date(dt_utc, dc_lon, dc_lat).date()
 
 
-def tz_for_coord(lon, lat):
+def tz_for_coord(lat, lon):
     tzn = tf.closest_timezone_at(lng=lon, lat=lat, delta_degree=9)
     if not tzn:
         print("closest tz failed with delta 9deg")
@@ -53,7 +53,7 @@ def tz_for_coord(lon, lat):
 
 
 def coord_date(time, lon, lat):
-    tz = tz_for_coord(lon,lat)
+    tz = tz_for_coord(lat,lon)
     return time.astimezone(tz)
 
 

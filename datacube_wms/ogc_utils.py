@@ -14,7 +14,13 @@ try:
 except ImportError:
     from datacube_wms.wms_cfg import response_cfg
 
-tf = TimezoneFinder(in_memory=True)
+# tf = TimezoneFinder(in_memory=True)
+tf = None
+
+def get_tf():
+    if tf is None:
+        tzf = TimezoneFinder(in_memory=True)
+    return tf
 
 # Use metadata time if possible as this is what WMS uses to calculate it's temporal extents
 # datacube-core center time accessed through the dataset API is caluclated and may
@@ -46,10 +52,10 @@ def local_date(ds, tz=None):
 
 
 def tz_for_coord(lon, lat):
-    tzn = tf.closest_timezone_at(lng=lon, lat=lat, delta_degree=9)
+    tzn = get_tf().closest_timezone_at(lng=lon, lat=lat, delta_degree=9)
     if not tzn:
         print("closest tz failed with delta 9deg")
-        tzn = tf.closest_timezone_at(lng=lon, lat=lat, delta_degree=15)
+        tzn = get_tf().closest_timezone_at(lng=lon, lat=lat, delta_degree=15)
         if not tzn:
             raise Exception ("closest tz failed with delta 15deg")
     return timezone(tzn)
